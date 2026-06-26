@@ -129,19 +129,22 @@ def n1n2n1_angles(b: Bloch):
 
 
 def approx_angle_with_tolerance(angle: float, tolerance: float) -> int:
-    """Find an integer multiple k such that
-        (k * LAMBDA_PI) mod 2*pi  ~=  angle   (within `tolerance`)
-    Since LAMBDA_PI / (2 pi) is irrational, such a k always exists; search
-    k = 1, 2, 3, ... and return the first one whose wrapped multiple lands within
-    `tolerance` of `angle` (compare both as angles in [0, 2 pi)).
 
-    Hint:
-      * wrap an angle into [0, 2 pi)
-      * the angular distance between two wrapped angles a, b is
-        min(|a - b|, TWO_PI - |a - b|) (so 0.01 and 2*pi - 0.01 count as close).
-    """
-    # TODO(student): implement using the hint above.
-    raise NotImplementedError("approx_angle_with_tolerance is not implemented yet")
+    target = angle % TWO_PI
+
+    k = 0
+
+    while True:
+
+        candidate = (k * LAMBDA_PI) % TWO_PI
+
+        diff = abs(candidate - target)
+        diff = min(diff, TWO_PI - diff)
+
+        if diff <= tolerance:
+            return k
+
+        k += 1
 
 
 def decompose_2x2(u: np.ndarray, tolerance: float) -> tuple[int, int, int]:
