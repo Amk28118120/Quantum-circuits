@@ -22,28 +22,31 @@ class Bloch:
     Bloch-sphere axis `n`. Here (n . sigma) = n_x X + n_y Y + n_z Z.
     """
 
-    alpha: float  # global phase
-    n: np.ndarray  # unit rotation axis, shape (3,): [n_x, n_y, n_z]
-    theta: float  # rotation angle
+    def __init__(self):
+        self.alpha = 0.0
+        self.n = None
+        self.theta = 0.0
+k = 1 / np.tan(np.pi/8)
 
+n1 = np.array([
+    -k,
+     1,
+     k
+], dtype=float)
 
-# def to_bloch(g: np.ndarray) -> Bloch:
-#     """Recover the Bloch form (alpha, n, theta) of a 2x2 unitary `g`."""
-#     raise NotImplementedError("to_bloch is not implemented yet")
+n2 = np.array([
+     1/np.sqrt(2),
+     np.sqrt(2)*k,
+    -1/np.sqrt(2)
+], dtype=float)
 
+n1 /= np.linalg.norm(n1)
+n2 /= np.linalg.norm(n2)
+a1 = -n1
+a2 = -n2
+a3 = np.cross(a1, a2)
+a3 /= np.linalg.norm(a3)
 
-# # n1, n2 are two orthogonal Bloch-sphere axes (n1 . n2 == 0)
-# # TODO: fill in the two orthogonal rotation axes (each a length-3
-# # unit vector [x, y, z])
-# n1 = np.array([np.nan, np.nan, np.nan])
-# n2 = np.array([np.nan, np.nan, np.nan])
-
-# # frame derived from the axes (given)
-# # take the dot product of the Bloch axis with these
-# # the minus sign arises from the double cover issue
-# a1 = -n1
-# a2 = -n2
-# a3 = np.cross(a1, a2)
 def to_bloch(g: np.ndarray) -> Bloch:
     # ----- Step 1: Global phase -----
     alpha = 0.5 * np.angle(np.linalg.det(g))
@@ -89,15 +92,40 @@ def to_bloch(g: np.ndarray) -> Bloch:
 
     return b
 
-def n1n2n1_angles(b: Bloch) -> tuple[float, float, float, float]:
-    """Factor the rotation part of a unitary (given as its Bloch form `b`) as
-        u = e^{i global_phase} * Rn1(alpha) * Rn2(beta) * Rn1(gamma)
+# def n1n2n1_angles(b: Bloch) -> tuple[float, float, float, float]:
+#     """Factor the rotation part of a unitary (given as its Bloch form `b`) as
+#         u = e^{i global_phase} * Rn1(alpha) * Rn2(beta) * Rn1(gamma)
 
-    where Ra(angle) is a rotation by `angle` about axis a, and {a1, a2, a3} is
-    the orthonormal frame defined above. Returns (alpha, beta, gamma, global_phase).
-    """
-    # TODO(student): implement using the steps above.
-    raise NotImplementedError("n1n2n1_angles is not implemented yet")
+#     where Ra(angle) is a rotation by `angle` about axis a, and {a1, a2, a3} is
+#     the orthonormal frame defined above. Returns (alpha, beta, gamma, global_phase).
+#     """
+#     # TODO(student): implement using the steps above.
+#     raise NotImplementedError("n1n2n1_angles is not implemented yet")
+def n1n2n1_angles(b: Bloch):
+    phi = b.theta
+
+    x = np.dot(b.n, a1)
+    y = np.dot(b.n, a2)
+    z = np.dot(b.n, a3)
+
+    cos_beta = np.sqrt(
+        np.cos(phi)**2 +
+        (x * np.sin(phi))**2
+    )
+    cos_beta = np.clip(cos_beta, -1.0, 1.0)
+    beta = np.arccos(cos_beta)
+
+    S = np.arctan2(
+        x * np.sin(phi),
+        np.cos(phi)
+    )
+
+    D = np.arctan2(z, y)
+
+    gamma = 0.5 * (S + D)
+    alpha = 0.5 * (S - D)
+
+    return alpha, beta, gamma, b.alpha
 
 
 def approx_angle_with_tolerance(angle: float, tolerance: float) -> int:
