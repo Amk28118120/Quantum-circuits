@@ -27,24 +27,67 @@ class Bloch:
     theta: float  # rotation angle
 
 
+# def to_bloch(g: np.ndarray) -> Bloch:
+#     """Recover the Bloch form (alpha, n, theta) of a 2x2 unitary `g`."""
+#     raise NotImplementedError("to_bloch is not implemented yet")
+
+
+# # n1, n2 are two orthogonal Bloch-sphere axes (n1 . n2 == 0)
+# # TODO: fill in the two orthogonal rotation axes (each a length-3
+# # unit vector [x, y, z])
+# n1 = np.array([np.nan, np.nan, np.nan])
+# n2 = np.array([np.nan, np.nan, np.nan])
+
+# # frame derived from the axes (given)
+# # take the dot product of the Bloch axis with these
+# # the minus sign arises from the double cover issue
+# a1 = -n1
+# a2 = -n2
+# a3 = np.cross(a1, a2)
 def to_bloch(g: np.ndarray) -> Bloch:
-    """Recover the Bloch form (alpha, n, theta) of a 2x2 unitary `g`."""
-    raise NotImplementedError("to_bloch is not implemented yet")
+    # ----- Step 1: Global phase -----
+    alpha = 0.5 * np.angle(np.linalg.det(g))
 
+    # ----- Step 2: Remove global phase -----
+    u = np.exp(-1j * alpha) * g
 
-# n1, n2 are two orthogonal Bloch-sphere axes (n1 . n2 == 0)
-# TODO: fill in the two orthogonal rotation axes (each a length-3
-# unit vector [x, y, z])
-n1 = np.array([np.nan, np.nan, np.nan])
-n2 = np.array([np.nan, np.nan, np.nan])
+    # ----- Step 3: Rotation angle -----
+    c = np.real(np.trace(u) / 2.0)
 
-# frame derived from the axes (given)
-# take the dot product of the Bloch axis with these
-# the minus sign arises from the double cover issue
-a1 = -n1
-a2 = -n2
-a3 = np.cross(a1, a2)
+    # Numerical safety
+    c = np.clip(c, -1.0, 1.0)
 
+    theta = 2.0 * np.arccos(c)
+
+    # ----- Step 4: Rotation axis -----
+    if np.isclose(theta, 0):
+        n = np.array([1.0, 0.0, 0.0])
+    else:
+        s = np.sin(theta / 2)
+
+        X = np.array([[0, 1],
+                      [1, 0]], dtype=DTYPE)
+
+        Y = np.array([[0, -1j],
+                      [1j, 0]], dtype=DTYPE)
+
+        Z = np.array([[1, 0],
+                      [0, -1]], dtype=DTYPE)
+
+        nx = np.real((1j / (2 * s)) * np.trace(X @ u))
+        ny = np.real((1j / (2 * s)) * np.trace(Y @ u))
+        nz = np.real((1j / (2 * s)) * np.trace(Z @ u))
+
+        n = np.array([nx, ny, nz])
+        n /= np.linalg.norm(n)
+
+    # ----- Step 5: Return Bloch object -----
+    b = Bloch()
+    b.alpha = alpha
+    b.n = n
+    b.theta = theta
+
+    return b
 
 def n1n2n1_angles(b: Bloch) -> tuple[float, float, float, float]:
     """Factor the rotation part of a unitary (given as its Bloch form `b`) as
