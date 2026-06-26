@@ -61,9 +61,10 @@ def to_bloch(g: np.ndarray) -> Bloch:
     c = np.clip(c, -1.0, 1.0)
 
     theta = 2.0 * np.arccos(c)
+    s = np.sin(theta / 2)
 
     # ----- Step 4: Rotation axis -----
-    if np.isclose(theta, 0):
+    if np.isclose(s, 0):
         n = np.array([1.0, 0.0, 0.0])
     else:
         s = np.sin(theta / 2)
@@ -148,30 +149,13 @@ def approx_angle_with_tolerance(angle: float, tolerance: float) -> int:
 
 
 def decompose_2x2(u: np.ndarray, tolerance: float) -> tuple[int, int, int]:
-    """Approximate a 2x2 unitary `u` as a product of powers of M1 and M2:
 
-        u  ~=  M1^k * M2^l * M1^m     (up to a global phase)
+    bloch = to_bloch(u)
 
-    where M1 is a rotation about axis a1 and M2 a rotation about axis a2, each by
-    the base angle realized by the H/T building blocks. Returns the powers
-    (k, l, m).
+    alpha, beta, gamma, _ = n1n2n1_angles(bloch)
 
-    Steps (combine the two functions above):
+    k = approx_angle_with_tolerance(alpha, tolerance)
+    l = approx_angle_with_tolerance(beta, tolerance)
+    m = approx_angle_with_tolerance(gamma, tolerance)
 
-      1. Get the Bloch form of u (to_bloch), then factor its rotation into the
-         three frame angles with n1n2n1_angles:
-             alpha, beta, gamma, _global_phase = n1n2n1_angles(to_bloch(u))
-         alpha and gamma are rotations about a1 (realized by powers of M1);
-         beta is a rotation about a2 (realized by powers of M2).
-
-      2. Convert each angle to an integer power with approx_angle_with_tolerance:
-             k = approx_angle_with_tolerance(alpha, tolerance)   # power of M1
-             l = approx_angle_with_tolerance(beta,  tolerance)   # power of M2
-             m = approx_angle_with_tolerance(gamma, tolerance)   # power of M1
-         (Mind the relationship between a target rotation angle and the base
-         angle each application of M1/M2 adds.)
-
-      3. Return (k, l, m).
-    """
-    # TODO(student): implement using the steps above.
-    raise NotImplementedError("decompose_2x2 is not implemented yet")
+    return k, l, m
